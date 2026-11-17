@@ -87,3 +87,14 @@ def heatmap_data(sheet):
         'colCodes': [str(rows[4][i]) for i in col_idx], 'colNames': [str(rows[5][i] or '') for i in col_idx],
         'unit': unit,
     })
+
+def focus_data(code, topn):
+    topn = max(1, min(int(topn), 50))
+    j = codes.index(str(code))
+    order = np.argsort(-L[:, j])[:topn]
+    rows = [{'code': codes[i], 'name': names[i],
+             'values': [float(L[i, j]), float(M[i, j]), float(V[i, j])]} for i in order]
+    return emit({'code': codes[j], 'name': names[j],
+                 'columns': ['생산유발계수', '수입유발계수', '부가가치유발계수'],
+                 'totals': [float(L[:, j].sum()), float(M[:, j].sum()), float(V[:, j].sum())],
+                 'rows': rows})
