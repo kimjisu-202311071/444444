@@ -256,3 +256,25 @@ button{background:#1d5c96}button:hover:not(:disabled){background:#164775}button.
 .network-center:before{right:100%}.network-center:after{left:100%}
 .network-center small,.network-center span{font-size:.68rem;color:#6b8298}.network-center strong{font-size:.95rem;overflow-wrap:anywhere}
 @media(max-width:680px){.network-grid{grid-template-columns:1fr;gap:10px}.network-center{grid-row:1}.network-center:before,.network-center:after{display:none}.network-node{padding:7px}.average-marker:after{font-size:8px}}
+
+/* v5: four-page navigation and red check-mark average references */
+.average-legend{display:flex;align-items:center;gap:7px;margin:0 0 12px;padding:9px 12px;background:#fff;border:1px solid #e7edf3;border-radius:9px;color:#526b82;font-size:.76rem;font-weight:750}
+.average-check{color:#d92727;font-size:1.12rem;font-weight:950;line-height:1}
+.average-marker{top:-14px!important;bottom:auto!important;width:auto!important;height:auto!important;border:0!important;transform:translateX(-50%);z-index:5}
+.average-marker:after{content:"✓"!important;position:absolute;top:0!important;left:0!important;color:#d92727!important;font-size:15px!important;line-height:1!important;font-style:normal;font-weight:950!important;white-space:nowrap;text-shadow:0 1px 1px #fff;transform:translateX(-50%)}
+.average-note{border-top-color:#f1caca;color:#a83232}
+.average-row .average-track .average-marker{top:-15px!important}
+.nav-group{display:grid;gap:3px}
+.classification-sidebar .side-sublink{width:100%;text-align:left;padding:5px 8px 5px 13px;margin-left:8px;border:0;border-left:1px solid #d8e2ec;border-radius:0;background:transparent;color:#718397;font-size:.72rem;font-weight:450;line-height:1.4}
+.classification-sidebar .side-sublink:hover:not(:disabled){background:#f7f9fc;color:#315878;transform:none;font-weight:650}
+.classification-sidebar .side-sublink.active{color:#174b7a;border-left:2px solid #397bb8;font-weight:700;background:#f2f6fa}
+.sidebar-subnav{gap:1px;padding:3px 0 7px 2px;margin-left:7px;border-left:0}
+#overview-page,#analysis-page,#simulation,#guide{scroll-margin-top:18px}
+#overview-page>.embedded-explorer{margin-top:34px;padding-top:24px;border-top:1px solid #e4ebf2}
+#overview-page>.embedded-explorer .section-title{margin-bottom:14px}
+.page-section-title{margin-bottom:22px;padding-bottom:13px;border-bottom:1px solid #e5edf4}
+.page-section-title h2{margin:0;color:#174b7a;font-size:1.45rem}
+.scenario-subheading{margin-top:8px}
+@media(max-width:680px){.classification-sidebar .sidebar-subnav{grid-template-columns:1fr;gap:1px}.classification-sidebar .side-sublink{font-size:.7rem}.average-legend{font-size:.72rem}}
+.comparison-table tfoot th{background:#fffafa;border-top:2px solid #d92727;color:#a83232}
+.average-footer-row td{background:#fffafa;border-top:2px solid #d92727;color:#a83232}
