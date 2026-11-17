@@ -46,6 +46,11 @@ function renderFocusMap(container, d) {
   d.totals.forEach(v => foot.append(el('td', fmt(v), cellCss + 'text-align:right;font-weight:bold;background:#f3f3f3')));
   const tfoot = el('tfoot');
   tfoot.append(foot);
+  const avgRow = el('tr');
+  avgRow.append(el('td', '전체 산업 평균 기준선', cellCss + 'font-weight:bold;background:#fff8e8;border-top:2px dashed #c28b2c'));
+  avgRow.append(el('td', '산업별 평균', cellCss + 'font-weight:bold;background:#fff8e8;border-top:2px dashed #c28b2c'));
+  (d.averages || [0,0,0]).forEach(v => avgRow.append(el('td', fmt(v), cellCss + 'text-align:right;font-weight:bold;background:#fff8e8;border-top:2px dashed #c28b2c')));
+  tfoot.append(avgRow);
   table.append(tfoot);
 
   const wrap = el('div', undefined, 'overflow-x:auto');

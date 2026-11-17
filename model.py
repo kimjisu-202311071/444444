@@ -121,7 +121,8 @@ def dashboard_data():
     return emit({'sectorCount':len(codes),'classification':classification,
         'metrics':{'output':sort(output),'valueAdded':sort(value_added),'influence':sort(influence),
                    'intermediate':sort(intermediate_rate),'domestic':sort(domestic_rate),'importDependence':sort(import_rate)},
-        'finalDemand':final_demand})
+        'finalDemand':final_demand,
+        'averages':{k:float(np.mean([x['value'] for x in v])) if v else 0.0 for k,v in [('output',output),('valueAdded',value_added),('influence',influence),('intermediate',intermediate_rate),('domestic',domestic_rate),('importDependence',import_rate)]}})
 
 def simulate(payload):
     if not valid: raise ValueError('검증된 데이터가 없습니다.')
@@ -136,7 +137,8 @@ def simulate(payload):
             for c,n,a,b,d in zip(codes,names,x,m,v)]
     result.sort(key=lambda r:r['production'],reverse=True)
     return emit({'demand':float(f.sum()),'production':float(x.sum()),'imports':float(m.sum()),
-                 'valueAdded':float(v.sum()),'multiplier':float(x.sum()/f.sum()),'rows':result})
+                 'valueAdded':float(v.sum()),'multiplier':float(x.sum()/f.sum()),
+                 'averages':{'production':float(np.mean(x)),'imports':float(np.mean(m)),'valueAdded':float(np.mean(v))},'rows':result})
 
 def focus_data(code, topn):
     topn = max(1, min(int(topn), 50))
@@ -147,6 +149,7 @@ def focus_data(code, topn):
     return emit({'code': codes[j], 'name': names[j],
                  'columns': ['생산유발계수', '수입유발계수', '부가가치유발계수'],
                  'totals': [float(L[:, j].sum()), float(M[:, j].sum()), float(V[:, j].sum())],
+                 'averages': [float(np.mean(L[:, j])), float(np.mean(M[:, j])), float(np.mean(V[:, j]))],
                  'rows': rows, 'sectorCount':len(codes)})
 
 def industry_data(code):
@@ -164,8 +167,33 @@ def industry_data(code):
         'valueAdded': float(value_added[j]),
         'influence': float(influence[j]),
         'sensitivity': float(sensitivity[j]),
+        'averages': {'production':float(np.mean(production)), 'imports':float(np.mean(imports)),
+                     'valueAdded':float(np.mean(value_added)), 'influence':1.0, 'sensitivity':1.0},
         'scatter': [
             {'code': c, 'name': n, 'influence': float(ix), 'sensitivity': float(sy)}
             for c, n, ix, sy in zip(codes, names, influence, sensitivity)
         ]
     })
+
+def comparison_data(selected_codes):
+    chosen=[]
+    for code in selected_codes:
+        if str(code) not in codes: continue
+        j=codes.index(str(code))
+        prod=L.sum(axis=0); imp=M.sum(axis=0); va=V.sum(axis=0)
+        inf=prod/float(prod.mean()); sens=L.sum(axis=1)/float(L.sum(axis=1).mean())
+        chosen.append({'code':codes[j],'name':names[j],'production':float(prod[j]),'imports':float(imp[j]),
+                       'valueAdded':float(va[j]),'influence':float(inf[j]),'sensitivity':float(sens[j])})
+    avgs={'production':float(np.mean(L.sum(axis=0))),'imports':float(np.mean(M.sum(axis=0))),
+          'valueAdded':float(np.mean(V.sum(axis=0))),'influence':1.0,'sensitivity':1.0}
+    return emit({'rows':chosen,'averages':avgs})
+
+def network_data(code, topn=6):
+    j=codes.index(str(code)); topn=max(3,min(int(topn),10))
+    # L[i,j]: demand in selected industry j induces output in supplier industry i.
+    suppliers=np.argsort(-L[:,j]); suppliers=[i for i in suppliers if i!=j][:topn]
+    # L[j,k]: demand in industry k induces output in selected industry j (customer industries).
+    customers=np.argsort(-L[j,:]); customers=[i for i in customers if i!=j][:topn]
+    return emit({'code':codes[j],'name':names[j],
+      'suppliers':[{'code':codes[i],'name':names[i],'value':float(L[i,j])} for i in suppliers],
+      'customers':[{'code':codes[i],'name':names[i],'value':float(L[j,i])} for i in customers]})

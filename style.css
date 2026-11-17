@@ -195,3 +195,64 @@ button{background:#1d5c96}button:hover:not(:disabled){background:#164775}button.
 .reader-tools ul{margin:7px 0 0;padding-left:19px}
 @media(max-width:980px){.classification-sidebar{max-height:none;position:static}.app-layout{grid-template-columns:200px minmax(0,1fr)}}
 @media(max-width:680px){.classification-sidebar{grid-template-columns:1fr;gap:9px}.classification-sidebar h2,.classification-sidebar>p,.class-side-note,.sidebar-divider,.sidebar-heading,.classification-sidebar .tabs,.sidebar-subnav{grid-column:1/-1}.classification-sidebar .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.classification-sidebar .tab{text-align:center;padding:9px 7px}.sidebar-subnav{grid-template-columns:1fr 1fr}.pie-layout{grid-template-columns:1fr;max-width:390px}.pie-layout svg{max-height:250px}.subsection-heading h2{font-size:1.08rem}.summary-card li .top-industry-name{font-size:.94rem}.summary-card li .top-industry-value{font-size:.87rem}}
+
+/* Navigation refinements: one vertical index for every analysis area */
+.classification-sidebar .sidebar-menu{display:grid;gap:5px;margin:0;padding:0}
+.classification-sidebar .side-link{width:100%;text-align:left;background:#f4f7fb;color:#315878;border:1px solid #e2eaf2;border-radius:8px;padding:10px 11px;font-size:.84rem;font-weight:800}
+.classification-sidebar .side-link:hover:not(:disabled){background:#eaf2fa;color:#174b7a;transform:none}
+.classification-sidebar .side-link.active{background:#174b7a;color:#fff;border-color:#174b7a}
+.summary-toolbar{align-items:center}
+.summary-card ol{display:grid;gap:8px;max-height:420px;overflow:auto;padding:0 4px 2px 0;scrollbar-width:thin}
+.summary-card li.top-metric-item{display:grid;grid-template-columns:1fr auto;gap:3px 8px;padding:7px 8px;border-radius:8px;background:#f8fafc;border:1px solid #edf2f6}
+.summary-card li.top-metric-item:first-child{background:#eef5fb;border-color:#d8e7f4}
+.summary-card li .top-rank-label{grid-column:1/-1;font-size:.66rem;color:#7890a5}
+.summary-card li .top-industry-name{font-size:.83rem;line-height:1.35;font-weight:850;color:#173f66}
+.summary-card li .top-industry-value{font-size:.82rem;font-weight:900;color:#123f70}
+.summary-card li .top-metric-track{height:8px;margin-top:2px}
+.summary-card li:first-child .top-industry-name{font-size:1rem;font-weight:950}
+.summary-card li:first-child .top-industry-value{font-size:.95rem;font-weight:950}
+.rank-toggle{flex-wrap:wrap}
+.final-demand-list{display:grid;gap:13px;padding:4px 0}
+.final-demand-row .chart-label{font-size:.86rem;font-weight:750;color:#31536f}
+.final-demand-row .chart-value{font-size:.88rem;font-weight:900;color:#174b7a}
+.final-demand-track{height:16px;background:#edf3f8}
+.final-demand-track .chart-fill{background:linear-gradient(90deg,#8db8db,#174b7a)}
+.final-demand-bars{max-width:900px;margin:0 auto}
+.pipeline-chart svg{max-height:330px}
+@media(max-width:680px){.classification-sidebar .sidebar-menu{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-card ol{max-height:340px}.summary-card li .top-industry-name{font-size:.77rem}.summary-card li .top-industry-value{font-size:.75rem}.rank-toggle{width:100%}}
+
+
+/* Whole-industry average reference lines and additional comparison views */
+.average-note{margin:7px 0 0;padding-top:7px;border-top:1px dashed #c28b2c;color:#7c632e;font-size:.68rem;font-weight:750;line-height:1.4}
+.top-metric-track,.chart-track,.average-track{position:relative;overflow:visible}
+.average-marker{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed #c28b2c;z-index:3;pointer-events:none}
+.average-marker:after{content:"평균";position:absolute;top:-17px;left:2px;color:#9a7127;font-size:9px;white-space:nowrap;font-style:normal;font-weight:800}
+.average-comparison{margin:16px 0}
+.average-baseline-panel{display:grid;gap:12px;margin:12px 0 3px;padding:12px 14px;background:#fbfcfe;border:1px solid #e5edf5;border-radius:9px}
+.average-row{display:grid;gap:5px;margin:9px 0}
+.average-row .chart-head{font-size:.8rem;color:#3d5871}
+.average-row .chart-head strong{color:#174b7a;font-variant-numeric:tabular-nums}
+.average-track{height:13px;background:#e9eff5;border-radius:99px;position:relative}
+.average-fill{height:100%;background:linear-gradient(90deg,#8db8db,#174b7a);border-radius:99px}
+.average-track .average-marker{top:-4px;bottom:-4px}
+.average-track .average-marker:after{content:"평균"}
+.compare-controls{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:16px}
+.compare-controls label{display:grid;gap:6px;min-width:min(100%,320px);flex:1;color:#34536e;font-weight:750;font-size:.82rem}
+.compare-controls select{min-height:120px}
+.comparison-table{min-width:650px;width:100%;border-collapse:collapse}
+.comparison-table th,.comparison-table td{padding:10px;border:1px solid #dfe7ef;text-align:right;font-size:.8rem}
+.comparison-table th:first-child,.comparison-table td:first-child{text-align:left}
+.comparison-table thead th{background:#edf4fa;color:#174b7a}
+.comparison-table tfoot th{background:#fff8e8;border-top:2px dashed #c28b2c;color:#795d22}
+.average-footer-row td{background:#fff8e8;border-top:2px dashed #c28b2c;font-weight:800;color:#795d22}
+.network-grid{display:grid;grid-template-columns:minmax(0,1fr) 190px minmax(0,1fr);gap:18px;align-items:center;padding:12px 4px}
+.network-column{display:grid;gap:7px;position:relative}
+.network-column h4{margin:0 0 4px;color:#174b7a;font-size:.9rem}
+.network-node{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 10px;border:1px solid #dce7f1;border-radius:8px;background:#f5f9fd;min-width:0}
+.network-node strong{font-size:.75rem;color:#284d6c;overflow-wrap:anywhere}
+.network-node small{font-size:.68rem;color:#6b8298;white-space:nowrap}
+.network-center{display:grid;gap:5px;text-align:center;padding:22px 12px;border:2px solid #2868a8;border-radius:14px;background:#eaf3fb;color:#174b7a;position:relative}
+.network-center:before,.network-center:after{content:"";position:absolute;top:50%;width:18px;border-top:2px dashed #6e9bc4}
+.network-center:before{right:100%}.network-center:after{left:100%}
+.network-center small,.network-center span{font-size:.68rem;color:#6b8298}.network-center strong{font-size:.95rem;overflow-wrap:anywhere}
+@media(max-width:680px){.network-grid{grid-template-columns:1fr;gap:10px}.network-center{grid-row:1}.network-center:before,.network-center:after{display:none}.network-node{padding:7px}.average-marker:after{font-size:8px}}

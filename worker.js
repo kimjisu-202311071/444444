@@ -33,6 +33,12 @@ async function handle({id,type,payload}) {
       py.globals.set('code_input',payload.code);
       py.globals.set('topn_input',payload.topn);
       result=py.runPython('focus_data(code_input, topn_input)');
+    } else if(type==='compare') {
+      py.globals.set('compare_codes_json', JSON.stringify(payload.codes));
+      result=py.runPython('comparison_data(json.loads(compare_codes_json))');
+    } else if(type==='network') {
+      py.globals.set('code_input',payload.code);
+      result=py.runPython('network_data(code_input)');
     } else {
       py.globals.set('scenario_input',JSON.stringify(payload));
       result=py.runPython('simulate(scenario_input)');
