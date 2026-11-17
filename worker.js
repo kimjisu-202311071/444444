@@ -23,8 +23,9 @@ async function handle({id,type,payload}) {
       py.globals.set('row_input',payload.row||'');
       result=py.runPython('explore(sheet_input, row_input)');
     } else if(type==='matrix') {
-      py.globals.set('sheet_input',payload.sheet);
-      result=py.runPython('heatmap_data(sheet_input)');
+            py.globals.set('code_input',payload.code);
+      py.globals.set('topn_input',payload.topn);
+      result=py.runPython('focus_data(code_input, topn_input)');
     } else {
       py.globals.set('scenario_input',JSON.stringify(payload));
       result=py.runPython('simulate(scenario_input)');
