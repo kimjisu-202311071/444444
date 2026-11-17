@@ -8,11 +8,11 @@ function options(el,list){el.replaceChildren(...list.map(x=>{const o=document.cr
 function invalidate(){result=null;$('results').hidden=true;}
 async function load(buffer){
  invalidate();basket=[];renderBasket();
- for(const id of ['sheet','row','sector','add','run','row-search','col-search','sector-search','amount'])$(id).disabled=true;
+ for(const id of ['sheet','row','sector','add','run','row-search','col-search','sector-search','amount','hm-sheet','hm-draw'])$(id).disabled=true;
  if(worker)worker.terminate();for(const p of requests.values())p.reject(Error('데이터 다시 로드'));requests.clear();startWorker();
  try{const info=await call('init',buffer);sectors=info.sectors;options($('sector'),sectors);$('sector-search').value='';$('row-search').value='';$('col-search').value='';$('sheet').replaceChildren(...info.sheets.map(s=>{const o=text('option',s);o.value=s;return o;}));
- $('validation').textContent=JSON.stringify(info.residuals,null,2)+'\n최대 절대 잔차: 허용값 1e-8 미만';
- for(const id of ['sheet','row','sector','add','run','row-search','col-search','sector-search','amount'])$(id).disabled=false;
+ $('hm-sheet').replaceChildren(...info.sheets.map(s=>{const o=text('option',s);o.value=s;return o;}));$('validation').textContent=JSON.stringify(info.residuals,null,2)+'\n최대 절대 잔차: 허용값 1e-8 미만';
+ for(const id of ['sheet','row','sector','add','run','row-search','col-search','sector-search','amount','hm-sheet','hm-draw'])$(id).disabled=false;
  await explore();$('status').textContent='준비 완료 · '+sectors.length+'개 부문 · '+info.sheets.length+'개 시트 · 계수 검증 통과';
  }catch(e){$('status').textContent='준비 실패: '+e.message+' — 새로고침 후 재시도하세요.';}
 }
@@ -54,4 +54,15 @@ $('load-basic').onclick=async()=>{
  }finally{
   if($('sheet').disabled){button.disabled=false;button.textContent='기본부문 다시 불러오기';}
  }
+};
+
+$('hm-draw').onclick=async()=>{
+ const btn=$('hm-draw');btn.disabled=true;$('status').textContent='히트맵 계산 중…';
+ try{
+  const d=await call('matrix',{sheet:$('hm-sheet').value});
+  $('hm-unit').textContent='단위: '+d.unit;
+  renderHeatmap($('heatmap'),{matrix:d.matrix,rowLabels:d.rowNames,colLabels:d.colNames,rowCodes:d.rowCodes,colCodes:d.colCodes,unit:d.unit});
+  $('status').textContent='히트맵 표시 완료 · '+$('hm-sheet').value;
+ }catch(e){$('status').textContent='히트맵 실패: '+String(e.message).split('\n').filter(Boolean).pop();}
+ finally{btn.disabled=false;}
 };
