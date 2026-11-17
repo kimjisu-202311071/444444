@@ -67,3 +67,23 @@ def simulate(payload):
     result.sort(key=lambda r:r['production'],reverse=True)
     return emit({'demand':float(f.sum()),'production':float(x.sum()),'imports':float(m.sum()),
                  'valueAdded':float(v.sum()),'multiplier':float(x.sum()/f.sum()),'rows':result})
+
+def heatmap_data(sheet):
+    import math
+    rows = book[sheet]
+    codeset = set(codes)
+    col_idx = [i for i in range(2, len(rows[4])) if rows[4][i] is not None and str(rows[4][i]) in codeset]
+    data_rows = [r for r in rows[6:] if r and r[0] is not None and str(r[0]) in codeset]
+    if not col_idx or not data_rows:
+        raise ValueError('이 시트는 산업×산업 행렬이 아니라 히트맵을 그릴 수 없습니다.')
+    def num(v):
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) else None
+    matrix_ = [[num(r[i]) if i < len(r) else None for i in col_idx] for r in data_rows]
+    raw = str(rows[3][0] or '')
+    unit = '계수' if (not raw or '係数' in raw) else raw.replace('단위', '').replace(':', '').strip()
+    return emit({
+        'matrix': matrix_,
+        'rowCodes': [str(r[0]) for r in data_rows], 'rowNames': [str(r[1] or '') for r in data_rows],
+        'colCodes': [str(rows[4][i]) for i in col_idx], 'colNames': [str(rows[5][i] or '') for i in col_idx],
+        'unit': unit,
+    })
