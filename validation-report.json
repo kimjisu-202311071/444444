@@ -1,18 +1,59 @@
 {
-  "산업수": 380,
-  "시트수": 12,
-  "최대절대잔차": {
-    "생산": 2.886579864025407e-15,
-    "수입": 2.7755575615628914e-16,
-    "부가가치": 4.440892098500626e-16
-  },
-  "테스트_벼_국내수요1000백만원": {
-    "demand": 1000.0,
-    "production": 1362.0235798184497,
-    "imports": 89.27600327833247,
-    "valueAdded": 910.7239967216672,
-    "multiplier": 1.3620235798184497
-  },
-  "최종수요표_열수": 8,
-  "주의": "Python 계산 모듈 검증 완료. 실제 브라우저 통합 검증은 미실시."
+  "기준연도": 2023,
+  "가격기준": "생산자가격",
+  "산업분류별검증": [
+    {
+      "file": "io-2023-large.xlsx.xlsx",
+      "classification": "대분류",
+      "sectors": 33,
+      "sheets": 12,
+      "max_residual": 1.1102230246251565e-15,
+      "dashboard_output_top": 10,
+      "sim_demand": 1000.0,
+      "sim_rows": 33,
+      "heatmap_rows": 10
+    },
+    {
+      "file": "io-2023-mid.xlsx.xlsx",
+      "classification": "중분류",
+      "sectors": 83,
+      "sheets": 12,
+      "max_residual": 1.1102230246251565e-15,
+      "dashboard_output_top": 10,
+      "sim_demand": 1000.0,
+      "sim_rows": 83,
+      "heatmap_rows": 10
+    },
+    {
+      "file": "io-2023-small.xlsx.xlsx",
+      "classification": "소분류",
+      "sectors": 165,
+      "sheets": 12,
+      "max_residual": 3.219646771412954e-15,
+      "dashboard_output_top": 10,
+      "sim_demand": 1000.0,
+      "sim_rows": 165,
+      "heatmap_rows": 10
+    },
+    {
+      "file": "io-2023.xlsx",
+      "classification": "기본부문",
+      "sectors": 380,
+      "sheets": 12,
+      "max_residual": 2.886579864025407e-15,
+      "dashboard_output_top": 10,
+      "sim_demand": 1000.0,
+      "sim_rows": 380,
+      "heatmap_rows": 10
+    }
+  ],
+  "검증항목": [
+    "생산유발계수: (I-Ad)L = I",
+    "수입유발계수: AmL = M",
+    "부가가치유발계수: v_hat L = V",
+    "분류별 대시보드 TOP 10 생성",
+    "분류별 수요충격 시뮬레이션",
+    "분류별 산업연관 히트맵 데이터 생성"
+  ],
+  "주의": "Python 분석 모듈 단위 검증 완료. 실제 브라우저 및 GitHub Pages 통합 테스트는 배포 후 수행 필요."
 }

@@ -1,42 +1,66 @@
 import json, io
 import numpy as np
 import openpyxl
+
 book = None
 
 def emit(x):
     return json.dumps(x, ensure_ascii=False, allow_nan=False)
 
+def _row_map(rows):
+    return {str(r[0]): i for i, r in enumerate(rows) if r and r[0] is not None and len(r) > 1 and r[1] is not None}
+
 def initialize(raw):
-    global book, codes, names, L, M, V, sheets, valid
+    global book, codes, names, L, M, V, sheets, valid, residuals, classification
     wb = openpyxl.load_workbook(io.BytesIO(bytes(raw)), read_only=True, data_only=True)
     book = {s: list(wb[s].values) for s in wb.sheetnames}
     wb.close()
     sheets = list(book)
     base = book['국산투입계수(Ad)']
-    codes = [str(c) for c in base[4][2:] if c is not None and str(c).isdigit() and int(str(c)) < 9000]
-    if len(codes) != 380 or len(set(codes)) != len(codes):
-        raise ValueError('이 버전은 첨부된 2023년 380부문 워크북 구조만 지원합니다.')
-    nm = {str(r[0]): str(r[1]) for r in base[6:]}
-    names = [nm[c] for c in codes]
+    base_rows = _row_map(base[6:])
+    # 산업코드는 열 머리글과 행 자료에 동시에 존재하는 항목으로 식별한다.
+    codes = [str(c) for c in base[4][2:] if c is not None and str(c) in base_rows]
+    codes = list(dict.fromkeys(codes))
+    if len(codes) < 10:
+        raise ValueError('산업코드를 판별할 수 없습니다. 선택한 엑셀 파일의 구조를 확인하세요.')
+    names_by_code = {str(r[0]): str(r[1]) for r in base[6:] if r and len(r)>1 and r[0] is not None and r[1] is not None}
+    names = [names_by_code[c] for c in codes]
+    classification = {33:'대분류', 83:'중분류', 165:'소분류', 380:'기본부문'}.get(len(codes), f'{len(codes)}개 산업')
+
     def matrix(s):
         rows = book[s]
-        ri = {str(r[0]): i for i,r in enumerate(rows) if r}
-        ci = {str(c): i for i,c in enumerate(rows[4])}
+        ri = {str(r[0]): i for i,r in enumerate(rows) if r and r[0] is not None}
+        ci = {str(c): i for i,c in enumerate(rows[4]) if c is not None}
+        missing_rows = [c for c in codes if c not in ri]
+        missing_cols = [c for c in codes if c not in ci]
+        if missing_rows or missing_cols:
+            raise ValueError(f'{s}: 산업코드 누락 (행 {len(missing_rows)}개, 열 {len(missing_cols)}개)')
         a = np.array([[rows[ri[c]][ci[k]] for k in codes] for c in codes], dtype=float)
         if not np.isfinite(a).all(): raise ValueError(s + ': 비수치 또는 결측 데이터')
         return a
-    L = matrix('생산유발계수'); M = matrix('수입유발계수'); V = matrix('부가가치유발계수')
-    ad = matrix('국산투입계수(Ad)'); am = matrix('수입투입계수(Am)')
-    rows=book['총투입계수(A)']; ci={str(c):i for i,c in enumerate(rows[4])}
-    vr=next(r for r in rows if str(r[0])=='9690')
-    v=np.array([vr[ci[c]] for c in codes],dtype=float)
-    residuals = {'생산':float(np.max(np.abs((np.eye(len(codes))-ad)@L-np.eye(len(codes))))),
-                 '수입':float(np.max(np.abs(am@L-M))),
-                 '부가가치':float(np.max(np.abs(v[:,None]*L-V)))}
+
+    L = matrix('생산유발계수')
+    M = matrix('수입유발계수')
+    V = matrix('부가가치유발계수')
+    ad = matrix('국산투입계수(Ad)')
+    am = matrix('수입투입계수(Am)')
+    rows = book['총투입계수(A)']
+    ci = {str(c):i for i,c in enumerate(rows[4]) if c is not None}
+    vr = next((r for r in rows if r and str(r[0])=='9690'), None)
+    if vr is None: raise ValueError('총투입계수표에서 부가가치계(9690)를 찾을 수 없습니다.')
+    v = np.array([vr[ci[c]] for c in codes], dtype=float)
+    residuals = {
+        '생산': float(np.max(np.abs((np.eye(len(codes))-ad)@L-np.eye(len(codes))))),
+        '수입': float(np.max(np.abs(am@L-M))),
+        '부가가치': float(np.max(np.abs(v[:,None]*L-V)))
+    }
     valid = max(residuals.values()) < 1e-8
     if not valid: raise ValueError('계수 검증 실패: '+str(residuals))
-    return emit({'sectors':[{'code':c,'name':n} for c,n in zip(codes,names)],
-                 'sheets':sheets,'residuals':residuals})
+    return emit({
+        'sectors':[{'code':c,'name':n} for c,n in zip(codes,names)],
+        'sheets':sheets,'residuals':residuals,'classification':classification,
+        'sectorCount':len(codes),'year':'2023','priceBasis':'생산자가격'
+    })
 
 def explore(sheet, rowcode):
     rows=book[sheet]
@@ -50,8 +74,37 @@ def explore(sheet, rowcode):
         if isinstance(val,(float,int)): val=float(val)
         elif val is not None: val=str(val)
         cells.append({'code':str(rows[4][i]),'name':str(rows[5][i] or ''),'value':val})
+    raw_unit = str(rows[3][0] or '').strip()
+    unit = raw_unit.replace('단위 : ', '').replace('단위:', '').strip() if raw_unit else ('계수·비율' if '계수' in sheet or '투입계수' in sheet else '원자료 표기 확인')
     return emit({'rows':choices,'selected':str(chosen[0]),'name':str(chosen[1]),
-                 'unit':str(rows[3][0] or '係数').replace('係数','계수 / 비율: 행·열 명칭 확인'), 'cells':cells})
+                 'unit':unit,'cells':cells})
+
+def dashboard_data():
+    def row_values(sheet, code):
+        rows=book[sheet]
+        row=next((r for r in rows if r and str(r[0])==str(code)),None)
+        if row is None: return []
+        ci={str(c):i for i,c in enumerate(rows[4]) if c is not None}
+        out=[]
+        for c,n in zip(codes,names):
+            idx=ci.get(c)
+            val=row[idx] if idx is not None and idx<len(row) else None
+            if isinstance(val,(int,float)) and np.isfinite(val):
+                out.append({'code':c,'name':n,'value':float(val)})
+        return out
+    output=row_values('A표_총거래표(생산자)','9790')
+    value_added=row_values('A표_총거래표(생산자)','9690')
+    influence=row_values('생산유발계수','9801')
+    # 열합(9590)은 산업별 생산유발계수의 합으로, 생산유발계수 행렬의 열합과 같은 의미다.
+    multiplier=row_values('생산유발계수','9590')
+    sort=lambda a: sorted(a,key=lambda x:x['value'],reverse=True)[:10]
+    return emit({
+        'sectorCount':len(codes),'classification':classification,
+        'outputTop':sort(output),'valueAddedTop':sort(value_added),
+        'influenceTop':sort(influence),'multiplierTop':sort(multiplier),
+        'totalOutput':float(sum(x['value'] for x in output)),
+        'totalValueAdded':float(sum(x['value'] for x in value_added))
+    })
 
 def simulate(payload):
     if not valid: raise ValueError('검증된 데이터가 없습니다.')
@@ -59,7 +112,7 @@ def simulate(payload):
     for s in shocks:
         a=float(s['amount'])
         if not np.isfinite(a) or a<0: raise ValueError('수요 증가액은 유한한 0 이상의 수여야 합니다.')
-        f[codes.index(s['code'])]+=a
+        f[codes.index(str(s['code']))]+=a
     if not f.sum()>0: raise ValueError('한 산업 이상의 양의 수요 증가액을 입력하세요.')
     x=L@f; m=M@f; v=V@f
     result=[{'code':c,'name':n,'production':float(a),'imports':float(b),'valueAdded':float(d)}
@@ -67,26 +120,6 @@ def simulate(payload):
     result.sort(key=lambda r:r['production'],reverse=True)
     return emit({'demand':float(f.sum()),'production':float(x.sum()),'imports':float(m.sum()),
                  'valueAdded':float(v.sum()),'multiplier':float(x.sum()/f.sum()),'rows':result})
-
-def heatmap_data(sheet):
-    import math
-    rows = book[sheet]
-    codeset = set(codes)
-    col_idx = [i for i in range(2, len(rows[4])) if rows[4][i] is not None and str(rows[4][i]) in codeset]
-    data_rows = [r for r in rows[6:] if r and r[0] is not None and str(r[0]) in codeset]
-    if not col_idx or not data_rows:
-        raise ValueError('이 시트는 산업×산업 행렬이 아니라 히트맵을 그릴 수 없습니다.')
-    def num(v):
-        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) else None
-    matrix_ = [[num(r[i]) if i < len(r) else None for i in col_idx] for r in data_rows]
-    raw = str(rows[3][0] or '')
-    unit = '계수' if (not raw or '係数' in raw) else raw.replace('단위', '').replace(':', '').strip()
-    return emit({
-        'matrix': matrix_,
-        'rowCodes': [str(r[0]) for r in data_rows], 'rowNames': [str(r[1] or '') for r in data_rows],
-        'colCodes': [str(rows[4][i]) for i in col_idx], 'colNames': [str(rows[5][i] or '') for i in col_idx],
-        'unit': unit,
-    })
 
 def focus_data(code, topn):
     topn = max(1, min(int(topn), 50))
@@ -97,4 +130,4 @@ def focus_data(code, topn):
     return emit({'code': codes[j], 'name': names[j],
                  'columns': ['생산유발계수', '수입유발계수', '부가가치유발계수'],
                  'totals': [float(L[:, j].sum()), float(M[:, j].sum()), float(V[:, j].sum())],
-                 'rows': rows})
+                 'rows': rows, 'sectorCount':len(codes)})

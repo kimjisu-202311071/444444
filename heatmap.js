@@ -40,7 +40,7 @@ function renderFocusMap(container, d) {
   table.append(body);
 
   const foot = el('tr');
-  const label = el('td', '전체 380개 산업 합계', cellCss + 'font-weight:bold;background:#f3f3f3');
+  const label = el('td', `전체 ${d.sectorCount || d.rows.length}개 산업 기준 합계`, cellCss + 'font-weight:bold;background:#f3f3f3');
   label.colSpan = 2;
   foot.append(label);
   d.totals.forEach(v => foot.append(el('td', fmt(v), cellCss + 'text-align:right;font-weight:bold;background:#f3f3f3')));
@@ -52,7 +52,7 @@ function renderFocusMap(container, d) {
   wrap.append(table);
   container.replaceChildren(
     el('h3', `[${d.code}] ${d.name} — 수요 1 증가 시 유발효과 상위 ${d.rows.length}개 산업`),
-    el('p', '값은 이 산업의 최종수요가 1백만원 늘 때 각 산업에서 유발되는 금액(백만원)입니다. 진할수록 큰 값이며, 열마다 따로 진하기를 정합니다(제곱근 척도). 아래 합계는 380개 산업 전체 기준입니다.', 'font-size:13px;color:#666'),
+    el('p', '표시값은 생산·수입·부가가치 유발계수(배)입니다. 선택 산업의 국산 최종수요가 1백만원 증가할 때 각 산업에 유발되는 금액(백만원)으로도 해석할 수 있습니다. 진할수록 값이 크며, 열마다 색상 범위를 따로 적용합니다.', 'font-size:13px;color:#666'),
     wrap
   );
 }
