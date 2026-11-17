@@ -80,31 +80,48 @@ def explore(sheet, rowcode):
                  'unit':unit,'cells':cells})
 
 def dashboard_data():
-    def row_values(sheet, code):
+    def row_values(sheet, rowcode):
         rows=book[sheet]
-        row=next((r for r in rows if r and str(r[0])==str(code)),None)
+        row=next((r for r in rows if r and str(r[0])==str(rowcode)),None)
         if row is None: return []
         ci={str(c):i for i,c in enumerate(rows[4]) if c is not None}
         out=[]
         for c,n in zip(codes,names):
             idx=ci.get(c)
             val=row[idx] if idx is not None and idx<len(row) else None
-            if isinstance(val,(int,float)) and np.isfinite(val):
-                out.append({'code':c,'name':n,'value':float(val)})
+            if isinstance(val,(int,float)) and np.isfinite(val): out.append({'code':c,'name':n,'value':float(val)})
         return out
     output=row_values('A표_총거래표(생산자)','9790')
     value_added=row_values('A표_총거래표(생산자)','9690')
+    intermediate=row_values('A표_총거래표(생산자)','9590')
+    domestic=row_values('A표_국산거래표(생산자)','9590')
+    imported=row_values('A표_수입거래표(생산자)','9590')
     influence=row_values('생산유발계수','9801')
-    # 열합(9590)은 산업별 생산유발계수의 합으로, 생산유발계수 행렬의 열합과 같은 의미다.
-    multiplier=row_values('생산유발계수','9590')
-    sort=lambda a: sorted(a,key=lambda x:x['value'],reverse=True)[:10]
-    return emit({
-        'sectorCount':len(codes),'classification':classification,
-        'outputTop':sort(output),'valueAddedTop':sort(value_added),
-        'influenceTop':sort(influence),'multiplierTop':sort(multiplier),
-        'totalOutput':float(sum(x['value'] for x in output)),
-        'totalValueAdded':float(sum(x['value'] for x in value_added))
-    })
+    total_map={x['code']:x['value'] for x in output}
+    int_map={x['code']:x['value'] for x in intermediate}
+    dom_map={x['code']:x['value'] for x in domestic}
+    imp_map={x['code']:x['value'] for x in imported}
+    def ratio_rows(num, den):
+        return [{'code':x['code'],'name':x['name'],'value':(num.get(x['code'],0)/den[x['code']]*100 if den.get(x['code'],0) else 0)} for x in output]
+    intermediate_rate=ratio_rows(int_map,total_map)
+    domestic_rate=ratio_rows(dom_map,int_map)
+    import_rate=ratio_rows(imp_map,int_map)
+    # 한국은행 표의 최종수요 항목별 생산유발액 구성비(9812)를 사용
+    fd=book['최종수요 항목별 생산유발액']
+    fdrow=next((r for r in fd if r and str(r[0])=='9812'),None)
+    final_demand=[]
+    if fdrow:
+        for i in range(2, min(len(fdrow),len(fd[5]))):
+            code=fd[4][i] if i<len(fd[4]) else None
+            label=fd[5][i] if i<len(fd[5]) else None
+            value=fdrow[i]
+            if code is not None and code!='9190' and isinstance(value,(int,float)):
+                final_demand.append({'code':str(code),'name':str(label or code).replace('\n',' '),'value':float(value)})
+    sort=lambda a: sorted(a,key=lambda x:x['value'],reverse=True)
+    return emit({'sectorCount':len(codes),'classification':classification,
+        'metrics':{'output':sort(output),'valueAdded':sort(value_added),'influence':sort(influence),
+                   'intermediate':sort(intermediate_rate),'domestic':sort(domestic_rate),'importDependence':sort(import_rate)},
+        'finalDemand':final_demand})
 
 def simulate(payload):
     if not valid: raise ValueError('검증된 데이터가 없습니다.')
@@ -131,3 +148,24 @@ def focus_data(code, topn):
                  'columns': ['생산유발계수', '수입유발계수', '부가가치유발계수'],
                  'totals': [float(L[:, j].sum()), float(M[:, j].sum()), float(V[:, j].sum())],
                  'rows': rows, 'sectorCount':len(codes)})
+
+def industry_data(code):
+    j = codes.index(str(code))
+    production = L.sum(axis=0)
+    imports = M.sum(axis=0)
+    value_added = V.sum(axis=0)
+    influence = production / float(production.mean())
+    sensitivity_raw = L.sum(axis=1)
+    sensitivity = sensitivity_raw / float(sensitivity_raw.mean())
+    return emit({
+        'code': codes[j], 'name': names[j],
+        'production': float(production[j]),
+        'imports': float(imports[j]),
+        'valueAdded': float(value_added[j]),
+        'influence': float(influence[j]),
+        'sensitivity': float(sensitivity[j]),
+        'scatter': [
+            {'code': c, 'name': n, 'influence': float(ix), 'sensitivity': float(sy)}
+            for c, n, ix, sy in zip(codes, names, influence, sensitivity)
+        ]
+    })

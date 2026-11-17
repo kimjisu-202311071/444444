@@ -26,6 +26,9 @@ async function handle({id,type,payload}) {
       py.globals.set('sheet_input',payload.sheet);
       py.globals.set('row_input',payload.row||'');
       result=py.runPython('explore(sheet_input, row_input)');
+    } else if(type==='industry') {
+      py.globals.set('code_input',payload.code);
+      result=py.runPython('industry_data(code_input)');
     } else if(type==='matrix') {
       py.globals.set('code_input',payload.code);
       py.globals.set('topn_input',payload.topn);

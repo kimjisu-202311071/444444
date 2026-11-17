@@ -1,128 +1,44 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <meta name="description" content="2023년 산업연관표를 탐색하고 산업별 경제적 파급효과를 분석하는 통계 웹앱"/>
-  <title>산업연관분석 통합 플랫폼</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
-  <link href="./style.css" rel="stylesheet"/>
-  <script defer src="./heatmap.js"></script>
-  <script defer src="./app.js"></script>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="description" content="2023년 산업연관표 기반 산업연관분석 통계 웹앱"/>
+  <title>산업연관표(2023) 요약</title>
+  <link rel="stylesheet" href="./style.css"/><script defer src="./heatmap.js"></script><script defer src="./app.js"></script>
 </head>
 <body>
-<header class="hero">
-  <div class="hero-inner">
-    <div class="eyebrow">INDUSTRIAL LINKAGE ANALYTICS · 2023</div>
-    <h1>산업연관분석 <span>통합 플랫폼</span></h1>
-    <p>산업 간 거래구조를 탐색하고, 최종수요 변화가 경제 전체에 미치는 파급효과를 분석합니다.</p>
-    <div class="hero-meta"><span>2023년 기준</span><span>생산자가격</span><span>한국은행 산업연관표</span></div>
-  </div>
-</header>
-<nav class="main-nav" aria-label="주요 메뉴">
-  <a href="#dashboard">대시보드</a><a href="#explorer">원자료 탐색</a><a href="#heatmap-section">산업연관구조</a><a href="#simulation">시나리오 분석</a><a href="#guide">분석 안내</a>
-</nav>
-<main>
-  <aside class="status-panel">
-    <div class="status-dot"></div>
-    <p id="status" role="status">산업분류를 선택하고 자료 불러오기를 눌러주세요.</p>
-    <details><summary>계수 검증 결과 보기</summary><pre id="validation">자료를 불러오면 검증 결과가 표시됩니다.</pre></details>
-  </aside>
-
-  <section class="load-panel">
-    <div>
-      <div class="section-kicker">DATA SOURCE</div>
-      <h2>분석 자료 선택</h2>
-      <p class="muted">같은 2023년 기준 산업연관표를 산업분류 수준별로 전환할 수 있습니다.</p>
+<header class="hero"><div class="hero-inner"><div class="eyebrow">INDUSTRIAL LINKAGE ANALYTICS · 2023</div><h1>산업연관표 <span>(2023) 요약</span></h1><p>산업 간 거래구조와 생산·수입·부가가치 유발효과를 쉽게 탐색합니다.</p><div class="hero-meta"><span>기준 연도: 2023년</span><span>가격 기준: 생산자가격</span><span>출처: 한국은행 산업연관표</span></div></div></header>
+<main><div class="app-layout">
+  <aside class="classification-sidebar" aria-label="산업분류 선택"><h2>산업분류</h2><p>분류표를 누르면 해당 자료를 불러옵니다.</p>
+    <button class="class-choice" data-class="large" type="button"><strong>대분류</strong><span>33개 산업</span></button>
+    <button class="class-choice" data-class="mid" type="button"><strong>중분류</strong><span>83개 산업</span></button>
+    <button class="class-choice" data-class="small" type="button"><strong>소분류</strong><span>165개 산업</span></button>
+    <button class="class-choice active" data-class="basic" type="button"><strong>기본부문</strong><span>380개 산업</span></button>
+    <div class="class-side-note">선택한 분류의 산업연관표 원자료와 분석 지표가 오른쪽에 표시됩니다.</div>
+  </aside><div class="workspace">
+  <section class="top-loader"><div class="loader-copy"><strong>분석 자료</strong><span>산업분류를 선택한 뒤 자료를 불러오세요.</span></div><div class="load-controls"><button id="load-basic" type="button">선택 자료 불러오기</button><select id="classification" hidden><option value="basic">기본부문</option><option value="small">소분류</option><option value="mid">중분류</option><option value="large">대분류</option></select></div><div class="ready-state"><span class="status-dot"></span><span id="status" role="status">자료 대기 중</span></div><details class="validation-details"><summary>계수 검증 결과</summary><pre id="validation">자료를 불러오면 검증 결과가 표시됩니다.</pre></details></section>
+  <nav class="tabs" aria-label="분석 메뉴"><button class="tab active" data-tab="industry">산업 찾기</button><button class="tab" data-tab="explorer">원자료 탐색</button><button class="tab" data-tab="simulation">시나리오 분석</button><button class="tab" data-tab="guide">분석 안내</button></nav>
+  <section id="industry" class="tab-panel active">
+    <div class="section-title"><div><div class="section-kicker">2023 INPUT-OUTPUT TABLE</div><h2>산업연관표(2023) 요약</h2><p class="muted">2023년 산업연관표의 산업별 핵심 구조 지표와 최종수요 구성을 한눈에 확인합니다.</p></div></div>
+    <div class="summary-toolbar"><div><strong>핵심 산업구조 지표</strong><small>각 상자에는 해당 지표의 상위 산업과 값이 표시됩니다.</small></div><div class="rank-toggle" role="group" aria-label="상위 항목 표시"><button type="button" class="rank-btn active" data-rank="1">상위 1개</button><button type="button" class="rank-btn" data-rank="20">상위 20개</button></div></div>
+    <div class="summary-grid" id="summary-grid">
+      <article class="summary-card"><h3>총산출액</h3><p>산업에서 생산한 재화와 서비스의 총액</p><ol id="sum-output"><li>자료를 불러오세요.</li></ol></article>
+      <article class="summary-card"><h3>부가가치액</h3><p>생산 과정에서 새롭게 창출된 가치</p><ol id="sum-value-added"><li>자료를 불러오세요.</li></ol></article>
+      <article class="summary-card"><h3>영향력계수</h3><p>해당 산업의 후방 연쇄효과 · 평균 1</p><ol id="sum-influence"><li>자료를 불러오세요.</li></ol></article>
+      <article class="summary-card"><h3>중간투입율</h3><p>총산출액 중 중간재 투입액의 비율</p><ol id="sum-intermediate"><li>자료를 불러오세요.</li></ol></article>
+      <article class="summary-card"><h3>국산화율</h3><p>중간투입액 중 국내산 투입액의 비율</p><ol id="sum-domestic"><li>자료를 불러오세요.</li></ol></article>
+      <article class="summary-card"><h3>수입의존도</h3><p>중간투입액 중 수입산 투입액의 비율</p><ol id="sum-import-dependence"><li>자료를 불러오세요.</li></ol></article>
     </div>
-    <div class="load-controls">
-      <label for="classification">산업분류</label>
-      <select id="classification">
-        <option value="basic">기본부문 · 380개</option>
-        <option value="small">소분류 · 165개</option>
-        <option value="mid">중분류 · 83개</option>
-        <option value="large">대분류 · 33개</option>
-      </select>
-      <button id="load-basic" type="button">자료 불러오기</button>
-    </div>
-    <div class="active-data">현재 자료: <strong id="active-classification">미선택</strong><span id="active-file">엑셀 자료 대기 중</span></div>
+    <div class="finder-box"><label>산업 검색<input disabled id="sector-search" placeholder="산업명 또는 코드 입력"/></label><label>분석 산업<select disabled id="sector" required></select></label><div class="hierarchy"><span>산업분류 경로</span><strong id="hierarchy-path">자료를 불러오면 표시됩니다.</strong><small>현재 선택한 산업연관표의 분류 수준과 산업명을 표시합니다.</small></div></div>
+    <div class="metric-grid four"><article class="metric-card"><span>생산유발계수 합계</span><strong id="metric-production">—</strong><small>단위: 배</small><p>최종수요 1단위 증가 시 전 산업에서 늘어나는 생산액</p></article><article class="metric-card"><span>수입유발계수 합계</span><strong id="metric-import">—</strong><small>단위: 배</small><p>최종수요 1단위 증가에 따라 유발되는 수입액</p></article><article class="metric-card"><span>부가가치유발계수 합계</span><strong id="metric-value">—</strong><small>단위: 배</small><p>최종수요 1단위 증가에 따라 국내에서 생기는 부가가치</p></article><article class="metric-card"><span>영향력 / 감응도계수</span><strong id="metric-linkage">—</strong><small>단위: 지수 · 평균=1</small><p>영향력은 후방, 감응도는 전방 연쇄효과를 나타냅니다.</p></article></div>
+    <article class="chart-card"><div class="chart-title"><div><h3>후방·전방 연쇄효과</h3><p>단위: 지수 · 평균=1</p><small>후방(영향력): 이 산업이 다른 산업의 생산을 얼마나 유발하는가 · 전방(감응도): 다른 산업의 수요 증가에 이 산업이 얼마나 반응하는가</small></div></div><div id="linkage-bars" class="bar-chart"><p class="empty">자료를 불러오고 산업을 선택하세요.</p></div><p class="source-note">출처: 한국은행 2023년 산업연관표 · 기준 연도: 2023년 · 생산자가격</p></article>
+    <article class="chart-card"><div class="chart-title"><div><h3>영향력·감응도계수 4분면</h3><p>단위: 지수 · 가로축=영향력계수, 세로축=감응도계수 · 기준선=1</p><small>오른쪽 위에 있을수록 후방·전방 연쇄효과가 모두 평균보다 큽니다. 선택 산업은 진하게 표시됩니다.</small></div></div><div id="quadrant-chart" class="scatter-wrap"><p class="empty">자료를 불러오면 전체 산업의 위치가 표시됩니다.</p></div><p class="source-note">출처: 한국은행 2023년 산업연관표 · 기준 연도: 2023년 · 계수행렬에서 계산</p></article>
+    <div class="filter-grid heatmap-filters"><label>히트맵 표시 산업 수<select disabled id="hm-topn"><option value="10">상위 10개</option><option value="20" selected>상위 20개</option><option value="30">상위 30개</option></select></label><div class="button-field"><button disabled id="hm-draw" type="button">유발효과 히트맵 보기</button></div></div>
+    <article class="chart-card"><div class="chart-title"><div><h3>수요 1단위 증가시 유발효과 상위 20개 산업</h3><p>단위: 배 · 생산·수입·부가가치유발계수</p><small>선택 산업의 최종수요 증가가 각 산업에 유발하는 효과를 비교합니다.</small></div></div><div id="heatmap" class="heatmap-output"><p class="empty">산업을 선택하고 히트맵 보기 버튼을 누르세요.</p></div><p class="source-note">출처: 한국은행 2023년 산업연관표 · 기준 연도: 2023년 · 생산자가격</p></article>
+    <article class="chart-card final-demand-card"><div class="chart-title"><div><h3>최종수요 비중</h3><p>단위: % · 최종수요 항목별 생산유발액 구성비</p><small>민간소비·정부소비·투자·재고·귀중품·수출이 전체 생산유발액에서 차지하는 비중입니다.</small></div></div><div id="final-demand-chart" class="bar-chart"><p class="empty">자료를 불러오면 최종수요 비중이 표시됩니다.</p></div><p class="source-note">출처: 한국은행 2023년 산업연관표 · 최종수요 항목별 생산유발액 구성비(9812) · 기준 연도: 2023년</p></article>
   </section>
-
-  <section id="dashboard" class="section-block">
-    <div class="section-title">
-      <div><div class="section-kicker">OVERVIEW</div><h2>산업구조 종합 대시보드</h2><p class="muted">선택한 산업분류에 맞춰 주요 지표와 상위 산업을 확인합니다.</p></div>
-      <span class="section-number">01</span>
-    </div>
-    <div class="metric-grid">
-      <article class="metric-card"><span>분석 산업 수</span><strong id="sector-count">—</strong><small id="class-count">자료 로딩 전</small></article>
-      <article class="metric-card"><span>총산출액 합계</span><strong id="output-total">—</strong><small>백만원 · 산업별 총투입계 합계</small></article>
-      <article class="metric-card"><span>부가가치 합계</span><strong id="value-total">—</strong><small>백만원 · 산업별 부가가치계 합계</small></article>
-    </div>
-    <div class="chart-grid">
-      <article class="chart-card"><div class="chart-title"><div><h3>총산출액 상위 10개 산업</h3><p>단위: 백만원</p></div><span class="chart-icon">01</span></div><div id="output-chart" class="bar-chart"><p class="empty">자료를 불러오면 그래프가 표시됩니다.</p></div></article>
-      <article class="chart-card"><div class="chart-title"><div><h3>부가가치액 상위 10개 산업</h3><p>단위: 백만원</p></div><span class="chart-icon">02</span></div><div id="value-chart" class="bar-chart"><p class="empty">자료를 불러오면 그래프가 표시됩니다.</p></div></article>
-      <article class="chart-card"><div class="chart-title"><div><h3>영향력계수 상위 10개 산업</h3><p>단위: 지수</p></div><span class="chart-icon">03</span></div><div id="influence-chart" class="bar-chart"><p class="empty">자료를 불러오면 그래프가 표시됩니다.</p></div></article>
-      <article class="chart-card"><div class="chart-title"><div><h3>생산유발계수 상위 10개 산업</h3><p>단위: 배 · 열합 기준</p></div><span class="chart-icon">04</span></div><div id="multiplier-chart" class="bar-chart"><p class="empty">자료를 불러오면 그래프가 표시됩니다.</p></div></article>
-    </div>
-    <p class="footnote">※ 그래프는 선택한 분류의 원자료에서 계산·추출한 값입니다. 산업분류 수준이 달라지면 순위와 값도 달라질 수 있습니다.</p>
-  </section>
-
-  <section id="explorer" class="section-block">
-    <div class="section-title"><div><div class="section-kicker">DATA EXPLORER</div><h2>원자료 탐색</h2><p class="muted">12개 시트를 구분하고 행 산업과 열 산업을 각각 검색할 수 있습니다.</p></div><span class="section-number">02</span></div>
-    <div class="filter-grid">
-      <label>투입산출표 시트<select disabled id="sheet"></select></label>
-      <label>행 산업 검색<input disabled id="row-search" placeholder="산업명 또는 코드 입력"/></label>
-      <label>행 산업 선택<select disabled id="row"></select></label>
-      <label>열 산업 검색<input disabled id="col-search" placeholder="열 산업명 또는 코드 입력"/></label>
-    </div>
-    <div class="unit-strip"><span class="unit-mark">UNIT</span><span id="unit">자료를 불러오면 시트별 단위가 표시됩니다.</span></div>
-    <div class="table-wrap"><table><caption id="explore-caption">자료를 불러온 후 검색 결과가 표시됩니다.</caption><thead><tr><th>열 코드</th><th>열 산업명</th><th class="numeric">원자료 값</th></tr></thead><tbody id="cells"></tbody></table></div>
-    <p class="footnote">※ 거래액은 원자료의 단위를 따릅니다. 계수·구성비·유발계수는 금액이 아니므로 시트 및 행의 지표명을 함께 확인하세요.</p>
-  </section>
-
-  <section id="heatmap-section" class="section-block">
-    <div class="section-title"><div><div class="section-kicker">INDUSTRY LINKAGE</div><h2>산업연관구조 히트맵</h2><p class="muted">선택 산업의 최종수요 증가가 다른 산업에 유발하는 효과를 비교합니다.</p></div><span class="section-number">03</span></div>
-    <div class="filter-grid heatmap-filters">
-      <label>산업 검색<input disabled id="hm-search" placeholder="산업명 또는 코드"/></label>
-      <label>분석 산업<select disabled id="hm-sector"></select></label>
-      <label>표시할 산업 수<select disabled id="hm-topn"><option value="10">상위 10개</option><option value="20" selected>상위 20개</option><option value="30">상위 30개</option></select></label>
-      <div class="button-field"><button disabled id="hm-draw" type="button">히트맵 분석</button></div>
-    </div>
-    <div id="heatmap" class="heatmap-output"><p class="empty">산업을 선택하고 분석 버튼을 누르세요.</p></div>
-  </section>
-
-  <section id="simulation" class="section-block">
-    <div class="section-title"><div><div class="section-kicker">SCENARIO LAB</div><h2>최종수요 변화 시나리오 분석</h2><p class="muted">하나 이상의 국내 생산물에 대한 최종수요 증가액을 입력해 경제적 파급효과를 계산합니다.</p></div><span class="section-number">04</span></div>
-    <div class="simulation-layout">
-      <form id="scenario" class="scenario-form">
-        <label>산업 검색<input disabled id="sector-search" placeholder="산업명 또는 코드"/></label>
-        <label>분석 산업<select disabled id="sector" required></select></label>
-        <label>최종수요 증가액 (백만원)<input disabled id="amount" min="0.01" required step="any" type="number" value="1000"/></label>
-        <p class="hint">예: 1,000백만원 = 10억원. 현재 버전은 양의 국내 최종수요 증가만 지원합니다.</p>
-        <button disabled id="add" type="submit">시나리오에 추가</button>
-      </form>
-      <div class="scenario-basket"><h3>입력한 시나리오</h3><ul id="basket"><li class="empty">아직 추가된 산업이 없습니다.</li></ul><div class="basket-actions"><button disabled id="run" type="button">파급효과 계산</button><button class="secondary" id="clear" type="button">초기화</button></div><p id="sim-status" role="status" class="hint">시나리오를 추가하세요.</p></div>
-    </div>
-    <div hidden id="results" class="results-panel">
-      <h3>분석 결과 요약</h3><div class="cards" id="cards"></div>
-      <article class="chart-card result-chart"><div class="chart-title"><div><h3>생산유발액 상위 15개 산업</h3><p>단위: 백만원</p></div></div><div id="bars" class="bar-chart"></div></article>
-      <div class="table-wrap"><table><caption>산업별 유발액 · 단위: 백만원</caption><thead><tr><th>산업코드</th><th>산업명</th><th class="numeric">생산유발액</th><th class="numeric">수입유발액</th><th class="numeric">부가가치유발액</th></tr></thead><tbody id="result-rows"></tbody></table></div>
-      <button id="download" type="button">전체 산업 분석 결과 CSV 다운로드</button>
-    </div>
-  </section>
-
-  <section id="guide" class="section-block guide-section">
-    <div class="section-title"><div><div class="section-kicker">HOW TO USE</div><h2>분석 지표 및 사용 안내</h2><p class="muted">자료의 기준과 계산 결과를 올바르게 해석하기 위한 안내입니다.</p></div><span class="section-number">05</span></div>
-    <div class="guide-grid">
-      <article><h3>생산유발계수</h3><p>국산 최종수요가 1단위 증가할 때 직·간접적으로 유발되는 국내 총산출의 크기입니다. 단위는 배입니다.</p></article>
-      <article><h3>수입유발계수</h3><p>국산 최종수요 증가에 따라 직·간접적으로 유발되는 수입액의 크기를 나타냅니다. 단위는 배입니다.</p></article>
-      <article><h3>부가가치유발계수</h3><p>국산 최종수요 증가에 따라 국내에서 유발되는 부가가치의 크기를 나타냅니다. 단위는 배입니다.</p></article>
-      <article><h3>영향력계수</h3><p>해당 산업의 후방연쇄효과를 전체 산업 평균과 비교한 상대 지수입니다. 단위는 지수이며 금액이 아닙니다.</p></article>
-    </div>
-    <div class="formula-note"><strong>분석 모형</strong><code>ΔX = (I − Ad)⁻¹ ΔYd</code><p>Ad는 국산 투입계수행렬, ΔYd는 국산 최종수요 변화, ΔX는 생산유발액 벡터입니다. 시뮬레이터는 선택한 산업분류에 해당하는 생산·수입·부가가치 유발계수 행렬을 이용합니다.</p></div>
-    <p class="footnote">자료 기준: 2023년 산업연관표, 생산자가격. 금액 자료의 단위는 각 시트의 원자료 표기를 따르며, 현재 거래표와 시뮬레이터 금액은 백만원 기준입니다. 분석 범위와 가정은 README.md에 상세히 설명되어 있습니다.</p>
-  </section>
-</main>
-<footer><strong>산업연관분석 통합 플랫폼</strong><span>2023 산업연관표 기반 통계 분석 웹앱 · GitHub Pages</span></footer>
-</body>
-</html>
+  <section id="explorer" class="tab-panel"><div class="section-title"><div><div class="section-kicker">DATA EXPLORER</div><h2>원자료 탐색</h2><p class="muted">투입산출표 시트와 행·열 산업을 검색합니다.</p></div></div><div class="filter-grid"><label>투입산출표 시트<select disabled id="sheet"></select></label><label>행 산업 검색<input disabled id="row-search" placeholder="산업명 또는 코드 입력"/></label><label>행 산업 선택<select disabled id="row"></select></label><label>열 산업 검색<input disabled id="col-search" placeholder="열 산업명 또는 코드 입력"/></label></div><div class="unit-strip"><span class="unit-mark">UNIT</span><span id="unit">자료를 불러오면 시트별 단위가 표시됩니다.</span></div><div class="table-wrap"><table><caption id="explore-caption">자료를 불러온 후 검색 결과가 표시됩니다.</caption><thead><tr><th>열 코드</th><th>열 산업명</th><th class="numeric">원자료 값</th></tr></thead><tbody id="cells"></tbody></table></div><p class="source-note">출처: 한국은행 2023년 산업연관표 · 기준 연도: 2023년 · 단위는 선택한 시트의 원자료 표기</p></section>
+  <section id="simulation" class="tab-panel"><div class="section-title"><div><div class="section-kicker">SCENARIO LAB</div><h2>최종수요 변화 시나리오</h2><p class="muted">산업의 최종수요 증가액을 입력해 경제적 파급효과를 계산합니다.</p></div></div><div class="simulation-layout"><form id="scenario" class="scenario-form"><label>산업 검색<input disabled id="sim-sector-search" placeholder="산업명 또는 코드"/></label><label>분석 산업<select disabled id="sim-sector" required></select></label><label>최종수요 증가액 (백만원)<input disabled id="amount" min="0.01" required step="any" type="number" value="1000"/></label><p class="hint">예: 1,000백만원 = 10억원. 양의 국내 최종수요 증가를 가정합니다.</p><button disabled id="add" type="submit">시나리오에 추가</button></form><div class="scenario-basket"><h3>입력한 시나리오</h3><ul id="basket"><li class="empty">아직 추가된 산업이 없습니다.</li></ul><div class="basket-actions"><button disabled id="run" type="button">파급효과 계산</button><button class="secondary" id="clear" type="button">초기화</button></div><p id="sim-status" role="status" class="hint">시나리오를 추가하세요.</p></div></div><div hidden id="results" class="results-panel"><h3>분석 결과 요약</h3><div class="cards" id="cards"></div><article class="chart-card result-chart"><div class="chart-title"><div><h3>생산유발액 상위 15개 산업</h3><p>단위: 백만원</p></div></div><div id="bars" class="bar-chart"></div><p class="source-note">출처: 한국은행 2023년 산업연관표 · 기준 연도: 2023년</p></article><div class="table-wrap"><table><caption>산업별 유발액 · 단위: 백만원</caption><thead><tr><th>산업코드</th><th>산업명</th><th class="numeric">생산유발액</th><th class="numeric">수입유발액</th><th class="numeric">부가가치유발액</th></tr></thead><tbody id="result-rows"></tbody></table></div><button id="download" type="button">전체 산업 분석 결과 CSV 다운로드</button></div></section>
+  <section id="guide" class="tab-panel"><div class="section-title"><div><div class="section-kicker">HOW TO USE</div><h2>분석 지표 및 사용 안내</h2><p class="muted">주요 용어의 뜻과 계산 기준을 확인하세요.</p></div></div><div class="guide-grid"><article><h3>생산유발계수</h3><p>국산 최종수요가 1단위 증가할 때 직·간접적으로 유발되는 국내 총산출의 크기입니다. 단위는 배입니다.</p></article><article><h3>수입유발계수</h3><p>국산 최종수요 증가에 따라 직·간접적으로 유발되는 수입액의 크기입니다. 단위는 배입니다.</p></article><article><h3>부가가치유발계수</h3><p>국산 최종수요 증가에 따라 국내에서 유발되는 부가가치의 크기입니다. 단위는 배입니다.</p></article><article><h3>영향력계수</h3><p>해당 산업의 생산유발계수 열합을 전체 산업 평균과 비교한 지수입니다. 후방연쇄효과를 뜻하며 평균은 1입니다.</p></article><article><h3>감응도계수</h3><p>해당 산업의 생산유발계수 행합을 전체 산업 평균과 비교한 지수입니다. 전방연쇄효과를 뜻하며 평균은 1입니다.</p></article></div><div class="formula-note"><strong>분석 모형</strong><code>ΔX = (I − Ad)⁻¹ ΔYd</code><p>Ad는 국산 투입계수행렬, ΔYd는 국산 최종수요 변화, ΔX는 생산유발액 벡터입니다. 금액은 백만원 기준이며 계수는 배 또는 지수로 표시합니다.</p></div><p class="source-note">자료 출처: 한국은행 2023년 산업연관표 · 기준 연도: 2023년 · 가격 기준: 생산자가격</p></section>
+</div></div></main><footer><strong>산업연관분석 통합 플랫폼</strong><span>2023 산업연관표 기반 통계 분석 웹앱 · GitHub Pages</span></footer>
+</body></html>

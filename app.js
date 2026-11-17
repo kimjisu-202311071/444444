@@ -1,164 +1,41 @@
 const $ = id => document.getElementById(id);
 const fmt = x => Number(x).toLocaleString('ko-KR',{maximumFractionDigits:3});
-let worker, nextId=0, requests=new Map(), sectors=[], rowChoices=[], cells=[], basket=[], result=null, dashboard=null;
-const FILES = {
-  basic:'./data/io-2023.xlsx',
-  small:'./data/io-2023-small.xlsx.xlsx',
-  mid:'./data/io-2023-mid.xlsx.xlsx',
-  large:'./data/io-2023-large.xlsx.xlsx'
-};
-const CLASS_LABELS = {basic:'기본부문 380개',small:'소분류 165개',mid:'중분류 83개',large:'대분류 33개'};
+let worker, nextId=0, requests=new Map(), sectors=[], rowChoices=[], cells=[], basket=[], result=null, industryData=null;
+const FILES={basic:'./data/io-2023.xlsx',small:'./data/io-2023-small.xlsx.xlsx',mid:'./data/io-2023-mid.xlsx.xlsx',large:'./data/io-2023-large.xlsx.xlsx'};
+const CLASS_LABELS={basic:'기본부문 380개',small:'소분류 165개',mid:'중분류 83개',large:'대분류 33개'};
 function text(tag,value){const e=document.createElement(tag);e.textContent=value;return e;}
 function call(type,payload){return new Promise((resolve,reject)=>{const id=++nextId;requests.set(id,{resolve,reject});worker.postMessage({id,type,payload});});}
-function startWorker(){
-  worker=new Worker('./worker.js');
-  worker.onmessage=({data:d})=>{
-    if(d.type==='status'){$('status').textContent=d.text;return;}
-    const p=requests.get(d.id);if(!p)return;requests.delete(d.id);d.ok?p.resolve(d.result):p.reject(Error(d.error));
-  };
-  worker.onerror=e=>{for(const p of requests.values())p.reject(Error(e.message||'Worker 실행 오류'));requests.clear();};
-}
+function startWorker(){worker=new Worker('./worker.js');worker.onmessage=({data:d})=>{if(d.type==='status'){$('status').textContent=d.text;return;}const p=requests.get(d.id);if(!p)return;requests.delete(d.id);d.ok?p.resolve(d.result):p.reject(Error(d.error));};worker.onerror=e=>{for(const p of requests.values())p.reject(Error(e.message||'Worker 실행 오류'));requests.clear();};}
 function options(el,list){el.replaceChildren(...list.map(x=>{const o=document.createElement('option');o.value=x.code;o.textContent=x.code+' '+x.name;return o;}));}
 function invalidate(){result=null;$('results').hidden=true;}
-function renderBarChart(container, rows, unit, valueLabel='값'){
-  container.replaceChildren();
-  if(!rows || !rows.length){container.append(text('p','표시할 자료가 없습니다.'));return;}
-  const max=Math.max(...rows.map(r=>Math.max(0,r.value)),1);
-  rows.forEach((r,i)=>{
-    const line=document.createElement('div');line.className='chart-row';
-    const head=document.createElement('div');head.className='chart-head';
-    const label=text('span',`${i+1}. ${r.name}`);label.className='chart-label';label.title=`${r.code} ${r.name}`;
-    const value=text('strong',`${fmt(r.value)} ${unit}`);value.className='chart-value';
-    head.append(label,value);
-    const track=document.createElement('div');track.className='chart-track';
-    const fill=document.createElement('div');fill.className='chart-fill';fill.style.width=`${Math.max(0,r.value)/max*100}%`;
-    track.append(fill);line.append(head,track);container.append(line);
-  });
+function renderBarChart(container,rows,unit){container.replaceChildren();if(!rows?.length){container.append(text('p','표시할 자료가 없습니다.'));return;}const max=Math.max(...rows.map(r=>Math.max(0,r.value)),1);rows.forEach((r,i)=>{const line=document.createElement('div');line.className='chart-row';const head=document.createElement('div');head.className='chart-head';const label=text('span',`${i+1}. ${r.name}`);label.className='chart-label';label.title=`${r.code} ${r.name}`;const value=text('strong',`${fmt(r.value)} ${unit}`);value.className='chart-value';head.append(label,value);const track=document.createElement('div');track.className='chart-track';const fill=document.createElement('div');fill.className='chart-fill';fill.style.width=`${Math.max(0,r.value)/max*100}%`;track.append(fill);line.append(head,track);container.append(line);});}
+let dashboardData=null, rankCount=1;
+function renderRankedList(id, rows, unit, digits=2){const el=$(id);el.replaceChildren();const shown=(rows||[]).slice(0,rankCount);if(!shown.length){el.append(text('li','자료 없음'));return;}shown.forEach((r,i)=>{const li=document.createElement('li');const name=text('span',`${i+1}. ${r.name}`);const value=text('strong',`${Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:digits})} ${unit}`);li.append(name,value);el.append(li);});}
+function renderDashboard(d){dashboardData=d;const m=d.metrics||{};renderRankedList('sum-output',m.output,'백만원',0);renderRankedList('sum-value-added',m.valueAdded,'백만원',0);renderRankedList('sum-influence',m.influence,'계수',3);renderRankedList('sum-intermediate',m.intermediate,'%',2);renderRankedList('sum-domestic',m.domestic,'%',2);renderRankedList('sum-import-dependence',m.importDependence,'%',2);renderBarChart($('final-demand-chart'),(d.finalDemand||[]).map(r=>({...r,value:r.value})),'%');}
+function drawQuadrant(d){const box=$('quadrant-chart');box.replaceChildren();const w=760,h=430,p={l:66,r:24,t:22,b:55},iw=w-p.l-p.r,ih=h-p.t-p.b;const xs=d.scatter.map(x=>x.influence),ys=d.scatter.map(x=>x.sensitivity);const maxX=Math.max(1.8,...xs)*1.05,maxY=Math.max(1.8,...ys)*1.05;const sx=x=>p.l+x/maxX*iw,sy=y=>p.t+ih-y/maxY*ih;const ns='http://www.w3.org/2000/svg';const svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.setAttribute('role','img');svg.setAttribute('aria-label','영향력계수와 감응도계수 4분면 산점도');
+ const add=(tag,attrs,parent=svg)=>{const n=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v));parent.append(n);return n;};
+ add('line',{x1:sx(1),x2:sx(1),y1:p.t,y2:p.t+ih,stroke:'#6b91b7','stroke-dasharray':'5 5','stroke-width':1.5});add('line',{x1:p.l,x2:p.l+iw,y1:sy(1),y2:sy(1),stroke:'#6b91b7','stroke-dasharray':'5 5','stroke-width':1.5});
+ add('line',{x1:p.l,y1:p.t+ih,x2:p.l+iw,y2:p.t+ih,stroke:'#61788e'});add('line',{x1:p.l,y1:p.t,x2:p.l,y2:p.t+ih,stroke:'#61788e'});
+ [0,.5,1,1.5,2].filter(v=>v<=maxX).forEach(v=>{add('line',{x1:sx(v),x2:sx(v),y1:p.t+ih,y2:p.t+ih+5,stroke:'#61788e'});const t=add('text',{x:sx(v),y:p.t+ih+22,'text-anchor':'middle',fill:'#526b7e','font-size':12});t.textContent=v.toFixed(1);});
+ [0,.5,1,1.5,2].filter(v=>v<=maxY).forEach(v=>{add('line',{x1:p.l-5,x2:p.l,y1:sy(v),y2:sy(v),stroke:'#61788e'});const t=add('text',{x:p.l-10,y:sy(v)+4,'text-anchor':'end',fill:'#526b7e','font-size':12});t.textContent=v.toFixed(1);});
+ const xlabel=add('text',{x:p.l+iw/2,y:h-9,'text-anchor':'middle',fill:'#243f56','font-size':13,'font-weight':700});xlabel.textContent='영향력계수 (지수)';const ylabel=add('text',{x:17,y:p.t+ih/2,transform:`rotate(-90 17 ${p.t+ih/2})`,'text-anchor':'middle',fill:'#243f56','font-size':13,'font-weight':700});ylabel.textContent='감응도계수 (지수)';
+ d.scatter.forEach(s=>{const selected=s.code===d.code;const c=add('circle',{cx:sx(s.influence),cy:sy(s.sensitivity),r:selected?6:3.4,fill:selected?'#123f70':'#6e9bc4',stroke:selected?'#092b4d':'#fff','stroke-width':selected?2:0.8,opacity:selected?1:.72});const title=add('title',{} ,c);title.textContent=`${s.name} · 영향력 ${fmt(s.influence)} 지수 · 감응도 ${fmt(s.sensitivity)} 지수`;if(selected){const t=add('text',{x:sx(s.influence)+9,y:sy(s.sensitivity)-9,fill:'#123f70','font-size':12,'font-weight':700});t.textContent=s.name;}});
+ box.append(svg);const legend=text('p','점 하나는 산업 1개를 뜻합니다. 점에 마우스를 올리면 산업명과 계수를 확인할 수 있습니다. 점선은 전체 산업 평균(1)입니다.');legend.className='chart-legend';box.append(legend);
 }
-function renderDashboard(d){
-  dashboard=d;
-  $('sector-count').textContent=fmt(d.sectorCount)+'개';
-  $('class-count').textContent=d.classification;
-  $('output-total').textContent=fmt(d.totalOutput);
-  $('value-total').textContent=fmt(d.totalValueAdded);
-  renderBarChart($('output-chart'),d.outputTop,'백만원','총산출액');
-  renderBarChart($('value-chart'),d.valueAddedTop,'백만원','부가가치액');
-  renderBarChart($('influence-chart'),d.influenceTop,'지수','영향력계수');
-  renderBarChart($('multiplier-chart'),d.multiplierTop,'배','생산유발계수(열합)');
-}
-async function load(buffer){
-  invalidate();basket=[];renderBasket();
-  for(const id of ['sheet','row','sector','add','run','row-search','col-search','sector-search','amount','hm-sector','hm-search','hm-topn','hm-draw'])$(id).disabled=true;
-  for(const p of requests.values())p.reject(Error('자료를 다시 불러옵니다.'));
-  requests.clear();if(!worker)startWorker();
-  try{
-    const info=await call('init',buffer);
-    sectors=info.sectors;options($('sector'),sectors);options($('hm-sector'),sectors);
-    $('sector-search').value='';$('row-search').value='';$('col-search').value='';$('hm-search').value='';
-    $('sheet').replaceChildren(...info.sheets.map(s=>{const o=text('option',s);o.value=s;return o;}));
-    $('validation').textContent=JSON.stringify(info.residuals,null,2)+`\n산업분류: ${info.classification} · ${info.sectorCount}개 산업\n최대 절대 잔차: 허용값 1e-8 미만`;
-    for(const id of ['sheet','row','sector','add','run','row-search','col-search','sector-search','amount','hm-sector','hm-search','hm-topn','hm-draw'])$(id).disabled=false;
-    await explore();
-    renderDashboard(await call('dashboard',{}));
-    $('status').textContent=`준비 완료 · ${info.classification} · ${info.sectorCount}개 산업 · ${info.sheets.length}개 시트 · 계수 검증 통과`;
-    $('active-classification').textContent=info.classification;
-    $('active-file').textContent=CLASS_LABELS[$('classification').value]+' 자료';
-  }catch(e){$('status').textContent='준비 실패: '+e.message+' — 자료 파일과 연결 상태를 확인하세요.';}
-}
-async function loadClassification(){
-  const key=$('classification').value;
-  $('load-basic').disabled=true;$('load-basic').textContent='자료 불러오는 중…';
-  try{
-    $('status').textContent=CLASS_LABELS[key]+' 산업연관표 다운로드 중…';
-    const response=await fetch(FILES[key]);
-    if(!response.ok)throw Error('엑셀 파일을 불러오지 못했습니다 (HTTP '+response.status+').');
-    await load(await response.arrayBuffer());
-    $('load-basic').textContent='자료 다시 불러오기';
-  }catch(e){$('status').textContent='자료 준비 실패: '+e.message;$('load-basic').textContent='다시 불러오기';}
-  finally{$('load-basic').disabled=false;}
-}
-let exploreSeq=0;
-async function explore(){
-  const seq=++exploreSeq;
-  try{
-    const d=await call('explore',{sheet:$('sheet').value,row:$('row').value});
-    if(seq!==exploreSeq)return;
-    rowChoices=d.rows;filterRows(d.selected);cells=d.cells;
-    $('unit').textContent='자료 단위: '+d.unit;
-    $('explore-caption').textContent=$('sheet').value+' / 행: '+d.selected+' '+d.name;
-    renderCells();
-  }catch(e){$('status').textContent=e.message;}
-}
-function filterRows(selected){
-  const q=$('row-search').value.trim().toLowerCase();
-  options($('row'),rowChoices.filter(r=>(r.code+' '+r.name).toLowerCase().includes(q)));
-  if([...$('row').options].some(o=>o.value===selected))$('row').value=selected;
-}
-function renderCells(){
-  const q=$('col-search').value.trim().toLowerCase();
-  $('cells').replaceChildren(...cells.filter(c=>(c.code+' '+c.name).toLowerCase().includes(q)).map(c=>{
-    const tr=document.createElement('tr');
-    for(const v of [c.code,c.name,c.value===null?'빈 셀':typeof c.value==='number'?fmt(c.value):c.value])tr.append(text('td',v));
-    return tr;
-  }));
-}
-$('classification').onchange=loadClassification;
-$('load-basic').onclick=loadClassification;
-$('sheet').onchange=()=>{$('row-search').value='';$('row').replaceChildren();explore();};
-$('row').onchange=explore;
-$('row-search').oninput=()=>{filterRows();if($('row').value)explore();else{$('cells').replaceChildren();$('explore-caption').textContent='일치하는 행이 없습니다.';}};
-$('col-search').oninput=renderCells;
-$('sector-search').oninput=()=>{const q=$('sector-search').value.trim().toLowerCase();options($('sector'),sectors.filter(s=>(s.code+' '+s.name).toLowerCase().includes(q)));};
-function renderBasket(){
-  $('basket').replaceChildren(...basket.map((s,i)=>{
-    const li=text('li',s.code+' '+s.name+' / '+fmt(s.amount)+'백만원 ');
-    const b=text('button','삭제');b.type='button';b.className='button-quiet';b.onclick=()=>{basket.splice(i,1);invalidate();renderBasket();};
-    li.append(b);return li;
-  }));
-  $('sim-status').textContent=basket.length?basket.length+'개 산업의 수요 증가가 입력되었습니다.':'시나리오를 추가하세요.';
-}
-$('scenario').onsubmit=e=>{
-  e.preventDefault();
-  const amount=Number($('amount').value),s=sectors.find(s=>s.code===$('sector').value);
-  if(!s||!Number.isFinite(amount)||amount<=0){$('sim-status').textContent='산업과 양의 증가액을 확인하세요.';return;}
-  basket.push({...s,amount});invalidate();renderBasket();
-};
-$('clear').onclick=()=>{basket=[];invalidate();renderBasket();};
-$('run').onclick=async()=>{
-  if(!basket.length){$('sim-status').textContent='시나리오를 먼저 추가하세요.';return;}
-  const snapshot=basket.map(s=>({...s}));$('run').disabled=true;$('sim-status').textContent='계산 중…';
-  try{
-    const r=await call('simulate',snapshot);
-    if(JSON.stringify(snapshot)!==JSON.stringify(basket)){$('sim-status').textContent='입력이 변경되었습니다. 다시 계산하세요.';return;}
-    result=r;renderResult();$('sim-status').textContent='계산 완료. 아래 결과는 현재 시나리오에 대응합니다.';
-  }catch(e){invalidate();$('sim-status').textContent='계산 실패: '+e.message;}
-  finally{$('run').disabled=false;}
-};
-function renderResult(){
-  $('results').hidden=false;
-  $('cards').replaceChildren(...[['수요 증가액',result.demand],['생산유발액',result.production],['수입유발액',result.imports],['부가가치유발액',result.valueAdded]].map(([title,v])=>{
-    const d=text('div',title);d.className='metric-card';d.append(text('strong',fmt(v)),text('span','백만원'));return d;
-  }));
-  renderBarChart($('bars'),result.rows.slice(0,15).map(r=>({code:r.code,name:r.name,value:r.production})),'백만원');
-  $('result-rows').replaceChildren(...result.rows.map(r=>{
-    const tr=document.createElement('tr');
-    [r.code,r.name,fmt(r.production),fmt(r.imports),fmt(r.valueAdded)].forEach(v=>tr.append(text('td',v)));
-    return tr;
-  }));
-}
-function csvCell(v){let s=String(v);if(/^[=+@-]/.test(s)&&typeof v!=='number')s="'"+s;return '"'+s.replaceAll('"','""')+'"';}
-$('download').onclick=()=>{
-  if(!result)return;
-  const rows=[['산업코드','산업명','생산유발액_백만원','수입유발액_백만원','부가가치유발액_백만원'],...result.rows.map(r=>[r.code,r.name,r.production,r.imports,r.valueAdded])];
-  const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
-  const a=document.createElement('a');a.href=url;a.download='io-2023-results.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-};
-$('hm-search').oninput=()=>{const q=$('hm-search').value.trim().toLowerCase();options($('hm-sector'),sectors.filter(s=>(s.code+' '+s.name).toLowerCase().includes(q)));};
-$('hm-draw').onclick=async()=>{
-  const code=$('hm-sector').value;if(!code){$('status').textContent='산업을 먼저 검색해 선택하세요.';return;}
-  const btn=$('hm-draw');btn.disabled=true;$('status').textContent='히트맵 계산 중…';
-  try{const d=await call('matrix',{code,topn:Number($('hm-topn').value)});renderFocusMap($('heatmap'),d);$('status').textContent='히트맵 표시 완료 · '+d.name;}
-  catch(e){$('status').textContent='히트맵 실패: '+String(e.message).split('\n').filter(Boolean).pop();}
-  finally{btn.disabled=false;}
-};
-$('classification').value='basic';
+async function load(buffer){invalidate();basket=[];renderBasket();const ids=['sheet','row','sim-sector','sector','add','run','row-search','col-search','sim-sector-search','amount','hm-topn','hm-draw'];ids.forEach(id=>$(id).disabled=true);for(const p of requests.values())p.reject(Error('자료를 다시 불러옵니다.'));requests.clear();if(!worker)startWorker();try{const info=await call('init',buffer);sectors=info.sectors;options($('sector'),sectors);options($('sim-sector'),sectors);$('sim-sector-search').value='';$('sector-search').value='';$('sheet').replaceChildren(...info.sheets.map(s=>{const o=text('option',s);o.value=s;return o;}));$('validation').textContent=JSON.stringify(info.residuals,null,2)+`\n산업분류: ${info.classification} · ${info.sectorCount}개 산업\n최대 절대 잔차: 허용값 1e-8 미만`;ids.forEach(id=>$(id).disabled=false);$('active-classification')?.remove();const dash=await call('dashboard',{});renderDashboard(dash);await explore();$('status').textContent=`준비 완료 · ${info.classification} · ${info.sectorCount}개 산업 · ${info.sheets.length}개 시트 · 계수 검증 통과`;$('hierarchy-path').textContent=`${info.classification} › ${sectors[0]?.name||'산업 선택'}`;await selectIndustry($('sector').value); }catch(e){$('status').textContent='준비 실패: '+e.message+' — 자료 파일과 연결 상태를 확인하세요.';}}
+async function loadClassification(){const key=$('classification').value;document.querySelectorAll('.class-choice').forEach(b=>b.classList.toggle('active',b.dataset.class===key));$('load-basic').disabled=true;$('load-basic').textContent='자료 불러오는 중…';$('status').textContent=CLASS_LABELS[key]+' 산업연관표 다운로드 중…';try{const response=await fetch(FILES[key]);if(!response.ok)throw Error('엑셀 파일을 불러오지 못했습니다 (HTTP '+response.status+').');await load(await response.arrayBuffer());$('load-basic').textContent='자료 다시 불러오기';}catch(e){$('status').textContent='자료 준비 실패: '+e.message;$('load-basic').textContent='다시 불러오기';}finally{$('load-basic').disabled=false;}}
+let exploreSeq=0;async function explore(){const seq=++exploreSeq;try{const d=await call('explore',{sheet:$('sheet').value,row:$('row').value});if(seq!==exploreSeq)return;rowChoices=d.rows;filterRows(d.selected);cells=d.cells;$('unit').textContent='자료 단위: '+d.unit;$('explore-caption').textContent=$('sheet').value+' / 행: '+d.selected+' '+d.name;renderCells();}catch(e){$('status').textContent=e.message;}}
+function filterRows(selected){const q=$('row-search').value.trim().toLowerCase();options($('row'),rowChoices.filter(r=>(r.code+' '+r.name).toLowerCase().includes(q)));if([...$('row').options].some(o=>o.value===selected))$('row').value=selected;}
+function renderCells(){const q=$('col-search').value.trim().toLowerCase();$('cells').replaceChildren(...cells.filter(c=>(c.code+' '+c.name).toLowerCase().includes(q)).map(c=>{const tr=document.createElement('tr');for(const v of [c.code,c.name,c.value===null?'빈 셀':typeof c.value==='number'?fmt(c.value):c.value])tr.append(text('td',v));return tr;}));}
+async function selectIndustry(code){if(!code||!sectors.length)return;const s=sectors.find(x=>x.code===code);if(!s)return;$('hierarchy-path').textContent=`${CLASS_LABELS[$('classification').value].split(' ')[0]} › ${s.name} (${s.code})`;$('status').textContent=`${s.name} 산업 지표 계산 중…`;try{industryData=await call('industry',{code});$('metric-production').textContent=fmt(industryData.production);$('metric-import').textContent=fmt(industryData.imports);$('metric-value').textContent=fmt(industryData.valueAdded);$('metric-linkage').textContent=`영향력 ${fmt(industryData.influence)} / 감응도 ${fmt(industryData.sensitivity)}`;renderBarChart($('linkage-bars'),[{code:s.code,name:'영향력계수 · 후방',value:industryData.influence},{code:s.code,name:'감응도계수 · 전방',value:industryData.sensitivity}],'지수');drawQuadrant(industryData);$('status').textContent=`준비 완료 · ${s.name} 선택 · 생산·수입·부가가치유발 및 연쇄효과 지표 표시`; }catch(e){$('status').textContent='산업 지표 계산 실패: '+e.message;}}
+function renderBasket(){$('basket').replaceChildren(...(basket.length?basket.map((s,i)=>{const li=text('li',s.code+' '+s.name+' / '+fmt(s.amount)+' 백만원');const b=text('button','삭제');b.type='button';b.className='button-quiet';b.onclick=()=>{basket.splice(i,1);invalidate();renderBasket();};li.append(b);return li;}):[text('li','아직 추가된 산업이 없습니다.') ]));$('sim-status').textContent=basket.length?basket.length+'개 산업의 수요 증가가 입력되었습니다.':'시나리오를 추가하세요.';}
+$('classification').value='basic';$('classification').onchange=loadClassification;$('load-basic').onclick=loadClassification;document.querySelectorAll('.class-choice').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.class===$('classification').value){loadClassification();return;}$('classification').value=btn.dataset.class;loadClassification();}));document.querySelectorAll('.rank-btn').forEach(btn=>btn.addEventListener('click',()=>{rankCount=Number(btn.dataset.rank);document.querySelectorAll('.rank-btn').forEach(b=>b.classList.toggle('active',b===btn));if(dashboardData)renderDashboard(dashboardData);}));
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===btn.dataset.tab));}));
+$('sector-search').oninput=()=>{const q=$('sector-search').value.trim().toLowerCase();options($('sector'),sectors.filter(s=>(s.code+' '+s.name).toLowerCase().includes(q)));};$('sector').onchange=()=>selectIndustry($('sector').value);
+$('sheet').onchange=()=>{$('row-search').value='';$('row').replaceChildren();explore();};$('row').onchange=explore;$('row-search').oninput=()=>{filterRows();if($('row').value)explore();else{$('cells').replaceChildren();$('explore-caption').textContent='일치하는 행이 없습니다.';}};$('col-search').oninput=renderCells;
+$('sim-sector-search').oninput=()=>{const q=$('sim-sector-search').value.trim().toLowerCase();options($('sim-sector'),sectors.filter(s=>(s.code+' '+s.name).toLowerCase().includes(q)));};
+$('scenario').onsubmit=e=>{e.preventDefault();const amount=Number($('amount').value),s=sectors.find(s=>s.code===$('sim-sector').value);if(!s||!Number.isFinite(amount)||amount<=0){$('sim-status').textContent='산업과 양의 증가액을 확인하세요.';return;}basket.push({...s,amount});invalidate();renderBasket();};$('clear').onclick=()=>{basket=[];invalidate();renderBasket();};
+$('run').onclick=async()=>{if(!basket.length){$('sim-status').textContent='시나리오를 먼저 추가하세요.';return;}const snapshot=basket.map(s=>({...s}));$('run').disabled=true;$('sim-status').textContent='계산 중…';try{result=await call('simulate',snapshot);if(JSON.stringify(snapshot)!==JSON.stringify(basket)){$('sim-status').textContent='입력이 변경되었습니다. 다시 계산하세요.';return;}renderResult();$('sim-status').textContent='계산 완료. 결과는 현재 시나리오에 대응합니다.';}catch(e){invalidate();$('sim-status').textContent='계산 실패: '+e.message;}finally{$('run').disabled=false;}};
+function renderResult(){$('results').hidden=false;$('cards').replaceChildren(...[['수요 증가액',result.demand],['생산유발액',result.production],['수입유발액',result.imports],['부가가치유발액',result.valueAdded]].map(([title,v])=>{const d=text('div',title);d.className='metric-card';d.append(text('strong',fmt(v)),text('span','단위: 백만원'));return d;}));renderBarChart($('bars'),result.rows.slice(0,15).map(r=>({code:r.code,name:r.name,value:r.production})),'백만원');$('result-rows').replaceChildren(...result.rows.map(r=>{const tr=document.createElement('tr');[r.code,r.name,fmt(r.production)+' 백만원',fmt(r.imports)+' 백만원',fmt(r.valueAdded)+' 백만원'].forEach(v=>tr.append(text('td',v)));return tr;}));}
+function csvCell(v){let s=String(v);if(/^[=+@-]/.test(s)&&typeof v!=='number')s="'"+s;return '"'+s.replaceAll('"','""')+'"';}$('download').onclick=()=>{if(!result)return;const rows=[['산업코드','산업명','생산유발액_백만원','수입유발액_백만원','부가가치유발액_백만원'],...result.rows.map(r=>[r.code,r.name,r.production,r.imports,r.valueAdded])];const url=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='io-2023-results.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+$('hm-draw').onclick=async()=>{const code=$('sector').value;if(!code){$('status').textContent='산업을 먼저 선택하세요.';return;}const btn=$('hm-draw');btn.disabled=true;$('status').textContent='히트맵 계산 중…';try{const d=await call('matrix',{code,topn:Number($('hm-topn').value)});renderFocusMap($('heatmap'),d);$('status').textContent='히트맵 표시 완료 · '+d.name;}catch(e){$('status').textContent='히트맵 실패: '+String(e.message).split('\n').filter(Boolean).pop();}finally{btn.disabled=false;}};
